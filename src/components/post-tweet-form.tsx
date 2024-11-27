@@ -1,10 +1,14 @@
+import { addDoc, collection } from "firebase/firestore";
 import { useState } from "react";
 import { styled } from "styled-components";
+import { auth, db } from "../firebase";
+
 const Form = styled.form`
   display: flex;
   flex-direction: column;
   gap: 10px;
 `;
+
 const TextArea = styled.textarea`
   border: 2px solid white;
   padding: 20px;
@@ -24,6 +28,7 @@ const TextArea = styled.textarea`
     border-color: #1d9bf0;
   }
 `;
+
 const AttachFileButton = styled.label`
   padding: 10px 0px;
   color: #1d9bf0;
@@ -34,9 +39,11 @@ const AttachFileButton = styled.label`
   font-weight: 600;
   cursor: pointer;
 `;
+
 const AttachFileInput = styled.input`
   display: none;
 `;
+
 const SubmitBtn = styled.input`
   background-color: #1d9bf0;
   color: white;
@@ -50,6 +57,7 @@ const SubmitBtn = styled.input`
     opacity: 0.9;
   }
 `;
+
 export default function PostTweetForm() {
   const [isLoading, setLoading] = useState(false);
   const [tweet, setTweet] = useState("");
@@ -63,8 +71,26 @@ export default function PostTweetForm() {
       setFile(files[0]);
     }
   };
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const user = auth.currentUser;
+    if (!user || isLoading || tweet === "" || tweet.length > 180) return;
+    try {
+      setLoading(true);
+      await addDoc(collection(db, "tweets"), {
+        tweet,
+        createdAt: Date.now(),
+        username: user.displayName || "Anonymous",
+        userId: user.uid,
+      });
+    } catch (e) {
+      console.log(e);
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
-    <Form>
+    <Form onSubmit={onSubmit}>
       <TextArea
         rows={5}
         maxLength={180}
